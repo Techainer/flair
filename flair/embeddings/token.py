@@ -823,6 +823,11 @@ class TransformerWordEmbeddings(TokenEmbeddings):
             self.model = AutoModel.from_pretrained(None, **kwargs)
 
         self.allow_long_sentences = allow_long_sentences
+        
+        try:
+            self.tokenizer.model_max_length = min(self.tokenizer.model_max_length, self.model.config.max_position_embeddings)
+        except:
+            pass
 
         if allow_long_sentences:
             self.max_subtokens_sequence_length = self.tokenizer.model_max_length

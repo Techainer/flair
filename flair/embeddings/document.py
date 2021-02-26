@@ -88,6 +88,10 @@ class TransformerDocumentEmbeddings(DocumentEmbeddings):
         self.batch_size = batch_size
 
         # check whether CLS is at beginning or end
+        try:
+            self.tokenizer.model_max_length = min(self.tokenizer.model_max_length, self.model.config.max_position_embeddings)
+        except:
+            pass
         self.initial_cls_token: bool = self._has_initial_cls_token(tokenizer=self.tokenizer)
 
     @staticmethod
