@@ -88,6 +88,10 @@ class TransformerDocumentEmbeddings(DocumentEmbeddings):
         self.batch_size = batch_size
 
         # check whether CLS is at beginning or end
+        try:
+            self.max_sentence_length = min(self.tokenizer.model_max_length, self.model.config.max_position_embeddings)
+        except:
+            self.max_sentence_length = self.tokenizer.model_max_length
         self.initial_cls_token: bool = self._has_initial_cls_token(tokenizer=self.tokenizer)
 
     @staticmethod
@@ -126,7 +130,7 @@ class TransformerDocumentEmbeddings(DocumentEmbeddings):
                 # tokenize and truncate to max subtokens (TODO: check better truncation strategies)
                 subtokenized_sentence = self.tokenizer.encode(sentence.to_tokenized_string(),
                                                               add_special_tokens=True,
-                                                              max_length=min(self.tokenizer.model_max_length, self.model.config.max_position_embeddings),
+                                                              max_length=self.max_sentence_length,
                                                               truncation=True,
                                                               )
 
