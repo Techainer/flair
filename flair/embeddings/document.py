@@ -40,6 +40,8 @@ class TransformerDocumentEmbeddings(DocumentEmbeddings):
             layers: str = "-1",
             layer_mean: bool = False,
             pooling: str = "cls",
+            use_fast: bool = True,
+            do_basic_tokenize: bool = True,
             **kwargs
     ):
         """
@@ -52,6 +54,8 @@ class TransformerDocumentEmbeddings(DocumentEmbeddings):
         :param layers: string indicating which layers to take for embedding (-1 is topmost layer)
         :param layer_mean: If True, uses a scalar mix of layers as embedding
         :param pooling: Pooling strategy for combining token level embeddings. options are 'cls', 'max', 'mean'.
+        :param use_fast: Whether or not to try to load the fast version of the tokenizer.
+        :param do_basic_tokenize: Whether to do basic tokenization before wordpiece.
         """
         super().__init__()
 
@@ -64,7 +68,15 @@ class TransformerDocumentEmbeddings(DocumentEmbeddings):
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
         # load tokenizer and transformer model
-        self.tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(model, **kwargs)
+        self.tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(model, use_fast=use_fast, do_basic_tokenize=do_basic_tokenize)
+        if use_fast:
+            # Dirty fix upstream bug: https://github.com/hankcs/HanLP/issues/1602
+            if hasattr(self.tokenizer, '_tokenizer') and hasattr(self.tokenizer._tokenizer, 'no_truncation'):
+                _t = self.tokenizer._tokenizer
+                _t.no_truncation()
+                _t.no_padding()
+                _t.no_truncation = _t.no_padding = lambda: None
+
         if not 'config' in kwargs:
             config = AutoConfig.from_pretrained(model, output_hidden_states=True, **kwargs)
             self.model = AutoModel.from_pretrained(model, config=config, **kwargs)
